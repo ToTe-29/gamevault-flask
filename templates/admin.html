@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Administración — GameVault</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <style>
+    /* Estilos estructurales adicionales para encapsular el layout administrativo */
+    .admin-wrapper {
+      padding-top: 110px;
+      min-height: calc(100vh - 60px);
+    }
+    .nav-tabs-gamer {
+      border-bottom: 2px solid var(--color-border);
+      gap: 0.5rem;
+    }
+    .nav-tabs-gamer .nav-link {
+      font-family: var(--font-display);
+      color: #94a3b8;
+      border: 1px solid transparent;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      transition: all var(--transition-fast);
+    }
+    .nav-tabs-gamer .nav-link:hover {
+      color: var(--color-neon-cyan);
+      border-color: transparent;
+    }
+    .nav-tabs-gamer .nav-link.active {
+      background-color: var(--color-bg-card);
+      color: var(--color-neon-cyan);
+      border: 1px solid var(--color-border);
+      border-bottom-color: var(--color-bg);
+      box-shadow: 0 -4px 10px rgba(0, 212, 255, 0.05);
+    }
+    .table-gamer {
+      background-color: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .table-gamer th {
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      color: #94a3b8;
+      letter-spacing: 0.05em;
+      background-color: var(--color-bg-surface);
+      border-bottom: 2px solid var(--color-border);
+      padding: 1rem;
+    }
+    .table-gamer td {
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      color: #e2e8f0;
+      padding: 1rem;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .table-gamer tr:last-child td {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-gamer fixed-top">
+    <div class="container-xl">
+      <a class="navbar-brand brand-logo" href="{{ url_for('index') }}">
+        <i class="bi bi-controller me-2"></i>GameVault Control
+      </a>
+      <div class="ms-auto">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-neon btn-sm">
+          <i class="bi bi-arrow-left me-1"></i>Volver a la Tienda
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+        {% for categoria, mensaje in messages %}
+          <div class="alert alert-{{ categoria }} alert-dismissible fade show alert-gamer" role="alert">
+            {{ mensaje }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <main class="container-xl admin-wrapper mb-5">
+    <div class="row">
+      <div class="col-12 mb-4">
+        <h1 class="text-gradient font-weight-black" style="font-size: 2.2rem;">Panel de Control CRUD</h1>
+        <p class="text-muted">Gestión relacional de la plataforma en entorno de base de datos transaccional SQLite.</p>
+      </div>
+    </div>
+
+    <ul class="nav nav-tabs nav-tabs-gamer" id="adminTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="games-tab" data-bs-toggle="tab" data-bs-target="#games" type="button" role="tab">
+          <i class="bi bi-joystick me-2"></i>Videojuegos
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="services-tab" data-bs-toggle="tab" data-bs-target="#services" type="button" role="tab">
+          <i class="bi bi-cpu me-2"></i>Servicios
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="clients-tab" data-bs-toggle="tab" data-bs-target="#clients" type="button" role="tab">
+          <i class="bi bi-people me-2"></i>Clientes
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content mt-4" id="adminTabsContent">
+      
+      <div class="tab-pane fade show active" id="games" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 font-family-display text-white mb-0">Catálogo de Productos</h2>
+          <button class="btn btn-neon btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoProducto">
+            <i class="bi bi-plus-lg me-1"></i>Añadir Videojuego
+          </button>
+        </div>
+
+        <div class="table-responsive table-gamer">
+          <table class="table table-dark mb-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Género</th>
+                <th>Plataforma</th>
+                <th>Precio</th>
+                <th>Rating</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in productos %}
+              <tr>
+                <td>{{ p.id }}</td>
+                <td class="fw-bold text-white">{{ p.titulo }}</td>
+                <td>{{ p.genero }}</td>
+                <td><small class="text-muted">{{ p.plataforma }}</small></td>
+                <td class="text-neon">S/ {{ "%.2f" | format(p.precio) }}</td>
+                <td><i class="bi bi-star-fill text-warning me-1"></i>{{ p.rating }}</td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-info me-2" data-bs-toggle="modal" data-bs-target="#modalEditarProducto{{ p.id }}">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <form action="{{ url_for('producto_eliminar', id=p.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-remove" onclick="return confirm('¿Confirmar la eliminación del producto?')">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+
+              <div class="modal fade" id="modalEditarProducto{{ p.id }}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content modal-gamer" style="border-color: var(--color-neon-cyan); box-shadow: var(--glow-cyan);">
+                    <div class="modal-header border-secondary">
+                      <h5 class="modal-title text-white font-family-display"><i class="bi bi-pencil-square me-2"></i>Editar Videojuego</h5>
+                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form action="{{ url_for('producto_editar', id=p.id) }}" method="POST">
+                      <div class="modal-body text-start">
+                        <div class="mb-3">
+                          <label class="form-label auth-label">Título</label>
+                          <input type="text" name="titulo" class="form-control auth-input" value="{{ p.titulo }}" required>
+                        </div>
+                        <div class="row mb-3">
+                          <div class="col-6">
+                            <label class="form-label auth-label">Género</label>
+                            <input type="text" name="genero" class="form-control auth-input" value="{{ p.genero }}" required>
+                          </div>
+                          <div class="col-6">
+                            <label class="form-label auth-label">Precio (S/)</label>
+                            <input type="number" step="0.01" name="precio" class="form-control auth-input" value="{{ p.precio }}" required>
+                          </div>
+                        </div>
+                        <div class="row mb-3">
+                          <div class="col-6">
+                            <label class="form-label auth-label">Imagen (Archivo)</label>
+                            <input type="text" name="imagen" class="form-control auth-input" value="{{ p.imagen }}" required>
+                          </div>
+                          <div class="col-6">
+                            <label class="form-label auth-label">Color Hex de Tarjeta</label>
+                            <input type="text" name="color_card" class="form-control auth-input" value="{{ p.color_card }}" required>
+                          </div>
+                        </div>
+                        <div class="row mb-3">
+                          <div class="col-6">
+                            <label class="form-label auth-label">Plataformas</label>
+                            <input type="text" name="plataforma" class="form-control auth-input" value="{{ p.plataforma }}" required>
+                          </div>
+                          <div class="col-6">
+                            <label class="form-label auth-label">Rating</label>
+                            <input type="number" step="0.1" name="rating" class="form-control auth-input" value="{{ p.rating }}" required>
+                          </div>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label auth-label">Descripción Breve</label>
+                          <textarea name="descripcion" class="form-control auth-input" rows="3" required>{{ p.descripcion }}</textarea>
+                        </div>
+                      </div>
+                      <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-neon btn-sm">Actualizar</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="services" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 font-family-display text-white mb-0">Líneas de Servicio Técnico</h2>
+          <button class="btn btn-neon btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoServicio">
+            <i class="bi bi-plus-lg me-1"></i>Añadir Servicio
+          </button>
+        </div>
+
+        <div class="table-responsive table-gamer">
+          <table class="table table-dark mb-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre Servicio</th>
+                <th>Descripción</th>
+                <th>Precio</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in servicios %}
+              <tr>
+                <td>{{ s.id }}</td>
+                <td class="fw-bold text-white">{{ s.nombre }}</td>
+                <td><small class="text-muted">{{ s.descripcion }}</small></td>
+                <td class="text-neon-green">S/ {{ "%.2f" | format(s.precio) }}</td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-info me-2" data-bs-toggle="modal" data-bs-target="#modalEditarServicio{{ s.id }}">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <form action="{{ url_for('servicio_eliminar', id=s.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-remove" onclick="return confirm('¿Confirmar la eliminación del servicio?')">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+
+              <div class="modal fade" id="modalEditarServicio{{ s.id }}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content modal-gamer" style="border-color: var(--color-neon-magenta); box-shadow: var(--glow-magenta);">
+                    <div class="modal-header border-secondary">
+                      <h5 class="modal-title text-white font-family-display"><i class="bi bi-gear-wide-connected me-2"></i>Editar Servicio</h5>
+                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form action="{{ url_for('servicio_editar', id=s.id) }}" method="POST">
+                      <div class="modal-body text-start">
+                        <div class="row mb-3">
+                          <div class="col-8">
+                            <label class="form-label auth-label">Nombre del Servicio</label>
+                            <input type="text" name="nombre" class="form-control auth-input" value="{{ s.nombre }}" required>
+                          </div>
+                          <div class="col-4">
+                            <label class="form-label auth-label">Precio (S/)</label>
+                            <input type="number" step="0.01" name="precio" class="form-control auth-input" value="{{ s.precio }}" required>
+                          </div>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label auth-label">Color Hex Estilizado</label>
+                          <input type="text" name="color_card" class="form-control auth-input" value="{{ s.color_card }}" required>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label auth-label">Descripción Operativa</label>
+                          <textarea name="descripcion" class="form-control auth-input" rows="3" required>{{ s.descripcion }}</textarea>
+                        </div>
+                      </div>
+                      <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-neon btn-sm">Actualizar</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="clients" role="tabpanel">
+        <div class="mb-3">
+          <h2 class="h5 font-family-display text-white mb-0">Base de Clientes Registrados</h2>
+        </div>
+
+        <div class="table-responsive table-gamer">
+          <table class="table table-dark mb-0">
+            <thead>
+              <tr>
+                <th>ID Core</th>
+                <th>Nombre Completo</th>
+                <th>Correo Electrónico</th>
+                <th class="text-end">Acciones Administrativas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in usuarios %}
+              <tr>
+                <td>#{{ u.id }}</td>
+                <td class="text-white">{{ u.nombre }}</td>
+                <td><code class="text-info">{{ u.email }}</code></td>
+                <td class="text-end">
+                  <form action="{{ url_for('usuario_eliminar', id=u.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-remove" onclick="return confirm('¿Está completamente seguro de revocar la cuenta de este usuario?')">
+                      <i class="bi bi-person-x me-1"></i>Eliminar Usuario
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">Ningún cliente registrado en el sistema local actualmente.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="modal fade" id="modalNuevoProducto" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-gamer" style="border-color: var(--color-neon-cyan); box-shadow: var(--glow-cyan);">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title text-white font-family-display"><i class="bi bi-plus-circle me-2"></i>Registrar Videojuego</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form action="{{ url_for('producto_nuevo') }}" method="POST">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label auth-label">Título Comercial</label>
+              <input type="text" name="titulo" class="form-control auth-input" placeholder="Ej. Cyberpunk 2077" required>
+            </div>
+            <div class="row mb-3">
+              <div class="col-6">
+                <label class="form-label auth-label">Género</label>
+                <input type="text" name="genero" class="form-control auth-input" placeholder="Ej. RPG" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label auth-label">Precio En Soles (S/)</label>
+                <input type="number" step="0.01" name="precio" class="form-control auth-input" placeholder="0.00" required>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-6">
+                <label class="form-label auth-label">Nombre de Imagen (.jpg)</label>
+                <input type="text" name="imagen" class="form-control auth-input" placeholder="ejemplo.jpg" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label auth-label">Color Hex (Borde)</label>
+                <input type="text" name="color_card" class="form-control auth-input" value="#00d4ff" required>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-6">
+                <label class="form-label auth-label">Plataformas</label>
+                <input type="text" name="plataforma" class="form-control auth-input" placeholder="PC / PS5" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label auth-label">Rating Base (0-5)</label>
+                <input type="number" step="0.1" name="rating" class="form-control auth-input" value="4.5" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label auth-label">Resumen Ejecutivo / Descripción</label>
+              <textarea name="descripcion" class="form-control auth-input" rows="3" placeholder="Sinopsis del juego..." required></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            <button type="submit" class="btn btn-neon btn-sm">Guardar Registro</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalNuevoServicio" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-gamer" style="border-color: var(--color-neon-magenta); box-shadow: var(--glow-magenta);">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title text-white font-family-display"><i class="bi bi-plus-circle me-2"></i>Registrar Servicio</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form action="{{ url_for('servicio_nuevo') }}" method="POST">
+          <div class="modal-body">
+            <div class="row mb-3">
+              <div class="col-8">
+                <label class="form-label auth-label">Nombre del Servicio Técnico</label>
+                <input type="text" name="nombre" class="form-control auth-input" placeholder="Ej. Cambio de Pasta Térmica" required>
+              </div>
+              <div class="col-4">
+                <label class="form-label auth-label">Costo (S/)</label>
+                <input type="number" step="0.01" name="precio" class="form-control auth-input" placeholder="0.00" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label auth-label">Color Hex Estilizado</label>
+              <input type="text" name="color_card" class="form-control auth-input" value="#e040fb" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label auth-label">Especificaciones del Servicio</label>
+              <textarea name="descripcion" class="form-control auth-input" rows="3" placeholder="Detalles operativos..." required></textarea>
+            </div>
+          </div>
+          <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            <button type="submit" class="btn btn-neon btn-sm">Guardar Servicio</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
