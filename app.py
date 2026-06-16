@@ -145,15 +145,18 @@ def index():
     # Consultar productos dinámicamente desde SQLite
     conn = get_db()
     productos_db = conn.execute('SELECT * FROM productos').fetchall()
+    servicios_db = conn.execute('SELECT * FROM servicios').fetchall()
     conn.close()
     
     # Conversión a diccionario para mantener compatibilidad exacta con las claves en index.html
     juegos = [dict(row) for row in productos_db]
+    servicios = [dict(row) for row in servicios_db]
     total_pagar = sum(item['precio'] * item['cantidad'] for item in carrito)
 
     return render_template(
         'index.html',
-        juegos      = juegos,    
+        juegos      = juegos, 
+        servicios   = servicios,   
         carrito     = carrito,         
         total_items = total_items,
         total_pagar = total_pagar
@@ -449,6 +452,32 @@ def pagar():
         'usuario':  session.get('usuario_nombre', 'Jugador')
     })
 
+# ---------------------------------------------------------------
+# RUTA: Procesar Solicitud de Servicio Técnico
+# ---------------------------------------------------------------
+@app.route('/servicio/solicitar', methods=['POST'])
+def solicitar_servicio():
+    """
+    Recibe los datos del formulario modal de servicios.
+    Verifica que el usuario haya iniciado sesión antes de permitir la solicitud.
+    """
+    # 1. Seguridad: Verificar si el usuario está logueado
+    if 'usuario_id' not in session:
+        flash('⚠️ Debes iniciar sesión o registrarte para solicitar un servicio técnico.', 'warning')
+        return redirect(url_for('index'))
+
+    # 2. Capturar los datos del formulario
+    servicio_nombre = request.form.get('servicio_nombre')
+    detalles = request.form.get('detalles')
+    usuario_actual = session.get('usuario_nombre')
+
+    # Aquí en un futuro se guardaría en la base de datos o se enviaría un email.
+    # Por ahora, simulamos el éxito de la operación.
+    
+    mensaje_exito = f'✅ ¡Solicitud recibida, {usuario_actual}! Nuestro equipo evaluará tu caso de "{servicio_nombre}" y te contactaremos pronto.'
+    flash(mensaje_exito, 'success')
+    
+    return redirect(url_for('index'))
 
 # ==============================================================
 # SECCIÓN 6: CONTROLADORES DEL PANEL ADMINISTRATIVO (CRUD)
@@ -468,11 +497,32 @@ def admin_panel():
     conn = get_db()
     productos = conn.execute('SELECT * FROM productos').fetchall()
     servicios = conn.execute('SELECT * FROM servicios').fetchall()
-    # Excluimos al propio administrador de la lista de clientes visualizados
     usuarios  = conn.execute('SELECT id, nombre, email FROM usuarios WHERE email != "admin@gamevault.com"').fetchall()
     conn.close()
+
+    # --- NUEVO: Cálculos matemáticos para el Dashboard (KPIs) ---
+    # Contamos la longitud de las listas para obtener los totales
+    kpis = {
+        'total_usuarios': len(usuarios),
+        'total_productos': len(productos),
+        'total_servicios': len(servicios),
+        # Sumamos el precio de todos los juegos para saber cuánto vale el inventario
+        'valor_inventario': sum(p['precio'] for p in productos) if productos else 0
+    }
+
+    # NUEVO GRÁFICO: Extraemos los títulos, los ratings y los colores de cada juego
+    nombres_juegos = [p['titulo'] for p in productos]
+    ratings_juegos = [p['rating'] for p in productos]
+    colores_juegos = [p['color_card'] for p in productos]
     
-    return render_template('admin.html', productos=productos, servicios=servicios, usuarios=usuarios)
+    return render_template('admin.html', 
+                        productos=productos, 
+                        servicios=servicios, 
+                        usuarios=usuarios,
+                        kpis=kpis,
+                        nombres_juegos=nombres_juegos,   # 👈 Enviamos los nombres
+                        ratings_juegos=ratings_juegos,   # 👈 Enviamos las puntuaciones
+                        colores_juegos=colores_juegos)   # 👈 Enviamos los colores neón
 
 # --- OPERACIONES CRUD: VIDEOJUEGOS ---
 

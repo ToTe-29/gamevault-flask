@@ -80,6 +80,12 @@
                 {{ session['usuario_nombre'] }}   <!-- Nombre del usuario actual -->
               </span>
             </li>
+            <!-- Si el usuario es admin, mostrar enlace al panel de administración -->
+            {% if session.get('usuario_email') == 'admin@gamevault.com' %}
+              <a href="{{ url_for('admin_panel') }}" class="btn ms-2" style="border: 1px solid var(--color-neon-magenta, #ff00ff); color: var(--color-neon-magenta, #ff00ff); transition: all 0.3s;" onmouseover="this.style.background='#ff00ff'; this.style.color='#070b14';" onmouseout="this.style.background='transparent'; this.style.color='#ff00ff';">
+                <i class="bi bi-shield-lock-fill me-1"></i> Panel Admin
+              </a>
+          {% endif %}
             <!-- Enlace para cerrar sesión -->
             <li class="nav-item">
               <a class="nav-link text-danger" href="{{ url_for('logout') }}">
@@ -263,6 +269,87 @@
     </div><!-- /container -->
   </section>
 
+  <section class="catalog-section" id="servicios" style="background: var(--color-bg-card); border-top: 1px solid var(--color-border);">
+    <div class="container-xl">
+
+      <div class="section-header text-center mb-5">
+        <h2 class="section-title">
+          <span class="text-gradient">Servicios</span> Técnicos
+        </h2>
+        <p class="section-subtitle">
+          Mejora tu experiencia gamer con nuestro soporte especializado
+        </p>
+      </div>
+
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 justify-content-center">
+        
+        {% for servicio in servicios %}
+        
+        <div class="col">
+          <div class="game-card" style="border-top: 3px solid {{ servicio.color_card }}; height: 100%; display: flex; flex-direction: column; background: var(--color-bg);">
+            <div class="game-card-body d-flex flex-column text-center" style="flex-grow: 1; padding: 2rem 1.5rem;">
+              
+              <div class="mb-3">
+                <i class="bi bi-cpu" style="font-size: 2.5rem; color: {{ servicio.color_card }}; text-shadow: 0 0 15px {{ servicio.color_card }}40;"></i>
+              </div>
+              
+              <h3 class="game-title" style="font-size: 1.3rem;">{{ servicio.nombre }}</h3>
+              <p class="game-desc mt-2" style="flex-grow: 1;">{{ servicio.descripcion }}</p>
+              
+              <div class="game-meta justify-content-center mt-3 pt-3" style="border-top: 1px solid var(--color-border);">
+                <span class="game-price" style="color: {{ servicio.color_card }}; font-size: 1.5rem;">
+                  S/ {{ "%.2f" | format(servicio.precio) }}
+                </span>
+              </div>
+              
+              <button class="btn w-100 mt-3" style="border: 1px solid {{ servicio.color_card }}; color: {{ servicio.color_card }}; background: transparent; transition: all 0.3s;" onmouseover="this.style.background='{{ servicio.color_card }}'; this.style.color='#070b14';" onmouseout="this.style.background='transparent'; this.style.color='{{ servicio.color_card }}';" data-bs-toggle="modal" data-bs-target="#modalServicio{{ servicio.id }}">
+                <i class="bi bi-calendar-check me-2"></i>Solicitar Servicio
+              </button>
+              
+            </div>
+          </div>
+        </div> <div class="modal fade" id="modalServicio{{ servicio.id }}" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background-color: var(--color-bg-card); border: 1px solid {{ servicio.color_card }}; box-shadow: 0 0 20px {{ servicio.color_card }}40;">
+              
+              <div class="modal-header border-secondary">
+                <h5 class="modal-title" style="color: {{ servicio.color_card }}; font-family: var(--font-display);">
+                  <i class="bi bi-tools me-2"></i>{{ servicio.nombre }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+
+              <form action="{{ url_for('solicitar_servicio') }}" method="POST">
+                <div class="modal-body text-start">
+                  <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
+                  <input type="hidden" name="servicio_nombre" value="{{ servicio.nombre }}">
+
+                  <p class="text-light opacity-75 mb-4">Costo del servicio: <strong>S/ {{ "%.2f" | format(servicio.precio) }}</strong></p>
+
+                  <div class="mb-3">
+                    <label class="form-label text-light">Describe brevemente tu requerimiento o problema:</label>
+                    <textarea name="detalles" class="form-control" rows="3" style="background-color: var(--color-bg-surface); color: white; border: 1px solid var(--color-border);" placeholder="Ej: Mi consola hace mucho ruido al encender..." required></textarea>
+                  </div>
+                </div>
+
+                <div class="modal-footer border-secondary">
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-sm" style="background-color: {{ servicio.color_card }}; color: #070b14; font-weight: bold;">
+                    <i class="bi bi-send-fill me-1"></i>Enviar Solicitud
+                  </button>
+                </div>
+              </form>
+
+            </div>
+          </div>
+        </div>
+
+        {% endfor %}
+
+      </div>
+    </div>
+  </section>
+
 
   <!-- ============================================================
        CARRITO OFFCANVAS (panel lateral deslizante de Bootstrap)
@@ -389,7 +476,7 @@
   <footer class="site-footer text-center py-4">
     <p class="mb-0">
       <i class="bi bi-controller me-2"></i>
-      <strong>GameVault</strong> — Proyecto de Fundamentos de Programación &copy; 2024
+      <strong>GameVault</strong> — Proyecto de Fundamentos de Programación &copy; 2026
     </p>
   </footer>
 

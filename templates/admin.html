@@ -109,17 +109,24 @@
     </div>
 
     <ul class="nav nav-tabs nav-tabs-gamer" id="adminTabs" role="tablist">
+      
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="games-tab" data-bs-toggle="tab" data-bs-target="#games" type="button" role="tab">
-          <i class="bi bi-joystick me-2"></i>Videojuegos
+        <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">
+          <i class="bi bi-graph-up-arrow me-2"></i>Dashboard
         </button>
       </li>
-      <li class="nav-item" role="presentation">
+      
+        <li class="nav-item" role="presentation">
+        <button class="nav-link" id="games-tab" data-bs-toggle="tab" data-bs-target="#games" type="button" role="tab">
+          <i class="bi bi-joystick me-2"></i>Videojuegos
+        </button>
+        </li>
+        <li class="nav-item" role="presentation">
         <button class="nav-link" id="services-tab" data-bs-toggle="tab" data-bs-target="#services" type="button" role="tab">
           <i class="bi bi-cpu me-2"></i>Servicios
         </button>
-      </li>
-      <li class="nav-item" role="presentation">
+        </li>
+        <li class="nav-item" role="presentation">
         <button class="nav-link" id="clients-tab" data-bs-toggle="tab" data-bs-target="#clients" type="button" role="tab">
           <i class="bi bi-people me-2"></i>Clientes
         </button>
@@ -127,8 +134,56 @@
     </ul>
 
     <div class="tab-content mt-4" id="adminTabsContent">
+
+      <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+        
+        <div class="row g-4 mb-4">
+          <div class="col-md-3">
+            <div class="card table-gamer h-100" style="border-left: 4px solid var(--color-neon-cyan);">
+              <div class="card-body">
+                <h6 class="text-light opacity-75 font-family-display">Clientes Registrados</h6>
+                <h3 class="text-white mb-0">{{ kpis.total_usuarios }} <i class="bi bi-people float-end opacity-50"></i></h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card table-gamer h-100" style="border-left: 4px solid var(--color-neon-magenta);">
+              <div class="card-body">
+                <h6 class="text-light opacity-75 font-family-display">Juegos en Catálogo</h6>
+                <h3 class="text-white mb-0">{{ kpis.total_productos }} <i class="bi bi-joystick float-end opacity-50"></i></h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card table-gamer h-100" style="border-left: 4px solid var(--color-neon-green);">
+              <div class="card-body">
+                <h6 class="text-light opacity-75 font-family-display">Servicios Activos</h6>
+                <h3 class="text-white mb-0">{{ kpis.total_servicios }} <i class="bi bi-cpu float-end opacity-50"></i></h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card table-gamer h-100" style="border-left: 4px solid var(--color-neon-orange);">
+              <div class="card-body">
+                <h6 class="text-light opacity-75 font-family-display">Valor Inventario (S/)</h6>
+                <h3 class="text-white mb-0">{{ "%.2f" | format(kpis.valor_inventario) }} <i class="bi bi-cash-coin float-end opacity-50"></i></h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-8">
+            <div class="card table-gamer p-3">
+              <h5 class="text-white font-family-display mb-3">Distribución de Juegos por Género</h5>
+              <canvas id="graficoGeneros" height="100"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>  
       
-      <div class="tab-pane fade show active" id="games" role="tabpanel">
+      <div class="tab-pane fade" id="games" role="tabpanel">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h2 class="h5 font-family-display text-white mb-0">Catálogo de Productos</h2>
           <button class="btn btn-neon btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoProducto">
@@ -449,5 +504,64 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const ctx = document.getElementById('graficoGeneros').getContext('2d');
+      
+      // Jinja2 recibe los nuevos datos desde app.py
+      const etiquetas = {{ nombres_juegos | tojson | safe }};
+      const valores   = {{ ratings_juegos | tojson | safe }};
+      const colores   = {{ colores_juegos | tojson | safe }};
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: etiquetas,
+          datasets: [{
+            label: 'Rating (Estrellas)',
+            data: valores,
+            backgroundColor: colores, // Cada barra con su color neón
+            borderColor: '#070b14',
+            borderWidth: 2,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ' Puntuación: ' + context.parsed.y + ' / 5.0';
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 5, // Límite máximo de 5 estrellas
+              ticks: { color: '#94a3b8', stepSize: 1 },
+              grid: { color: '#1f2937' }
+            },
+            x: {
+              ticks: { 
+                color: '#94a3b8',
+                maxRotation: 45, // Inclina los textos para que se lean mejor
+                minRotation: 45
+              },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    });
+  </script>
+
+
 </body>
 </html>
